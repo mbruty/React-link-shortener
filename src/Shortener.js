@@ -58,7 +58,7 @@ export default class Shortener extends Component {
             }).then((res) => {
                 if (res.ok) {
                     let lbl = document.getElementById('txtLbl');
-                    lbl.innerText = "Created! " + this.state.data.url;
+                    lbl.innerText = "Created! https://www.bestsong.co.uk " + this.state.data.slug;
                     lbl.classList.remove('err');
                     lbl.classList.add('success');
                 } else if (res.status === 400) {

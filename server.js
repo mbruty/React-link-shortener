@@ -5,11 +5,10 @@ const rateLimit = require('express-rate-limit');
 const slowDown = require('express-slow-down');
 var bodyParser = require('body-parser');
 const Monk = require('monk')
-const cors = require('cors');
 const yup = require('yup');
 
 
-const db = Monk((JSON.parse(fs.readFileSync('credentials.json')).mongo_conn_string));
+const db = Monk(process.env.mongo_conn_string);
 const urls = db.get('urls');
 urls.createIndex({
     slug: 1
@@ -17,26 +16,23 @@ urls.createIndex({
     unique: true
 });
 const app = express();
-const port = 8080;
+const port =  process.env.PORT || 8080;
+app.use(express.static(path.join(__dirname, "/build")));
 const schema = yup.object().shape({
     url: yup.string().trim().url().required(),
     slug: yup.string().trim().matches(/^[\w\-]+$/i).required(),
 });
-const notFoundPath = path.join(__dirname, 'src/404.html');
+const notFoundPath = path.join(__dirname, 'build/404.html');
 
 app.use(bodyParser.json());
-app.use(cors());
 
-app.get('/:slug', async (req, res, next) => {
+app.get('/:slug', async (req, res) => {
     let slug = req.params.slug;
     //See if exists
     try {
-        const entry = await urls.findOne({
-            slug
-        });
+        const url = await urls.findOne({ slug });
         if (entry) {
-            console.log(entry);
-            return res.redirect(entry.url);
+            return res.redirect(url.url);
         }
         return res.status(404).sendFile(notFoundPath);
     } catch (err) {
@@ -79,6 +75,11 @@ app.post('/api', slowDown({
             message: err.message
         });
     }
+});
+  
+  // build mode
+app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "/public/index.html"));
 });
 
 app.listen(port, () => console.log(`App listening at ${port}`))
